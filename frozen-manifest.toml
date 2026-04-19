@@ -10,7 +10,7 @@ Makefile = "c357f30e9cb1c850c141b2890f29a7cab96fce82eaa6cdba96b38bb3a25d9753"
 "README.md" = "abd1999ce512f076fce3d47702f42a8d392ff2f1f10a1ae6b627b18cef0bbfb7"
 "data/fixture_512.bin" = "b38f4defb6acecba5131ca5b4c5caa0d1dd63df97f6192112ab953eaa700943d"
 "prepare.jl" = "4a1c4e6f16f990fd878a83f12570fcc973783a22acee1b2b9ae12e7dd0771d78"
-"program.md" = "1634143d89f297f74ba7962301f6bfde83b18974d100bb1e9b2f6f2abccb145f"
+"program.md" = "ee05e8be505f1ee8423ada217b38537059b8476a448b85af8aed4a61e84b9204"
 "scripts/compute_manifest.jl" = "d7cebf302060f10efec651a912c935208b69bae9aedd26f874e8e83bf00eac72"
 "scripts/generate_fixture.jl" = "58ecf4970b0646b82a8deef5c3893464d9beda37d9d992d92da54cf4b6ef749d"
 "src/AutoDFT.jl" = "25b040a67f81f1233c8da08f80f1735311abcc15fca15f8bdb33e968e40e3ed4"
@@ -26,4 +26,4 @@ Makefile = "c357f30e9cb1c850c141b2890f29a7cab96fce82eaa6cdba96b38bb3a25d9753"
 qft_identity_mse = 5636.395472862066
 
 [secret]
-manifest_sha = "bab16b8afc07b794687d76ce2351ec2031933a52fbd913601efa7008d4d0c9fa"
+manifest_sha = "04355516b813b00f5c70717fa210fc49259844348304cbe09f8b5f9115b92e2b"

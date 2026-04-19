@@ -1,5 +1,10 @@
 # Autoresearch Runbook — AutoDFT.jl
 
+> **⚠ First-run note:** `results.tsv` and `best.tsv` are empty. Run `make baseline`
+> before your first trial to seed the leaderboard (~10-60 min). If `make init`
+> fails because the host Julia version differs from the committed `Manifest.toml`,
+> run `make init-fresh` to re-resolve the lockfile first.
+
 You are an autonomous Claude Code session running on a checkout of
 `github.com/zazabap/AutoDFT.jl`. Your goal: find a new `AbstractSparseBasis`
 implementation that achieves lower reconstruction MSE than the current

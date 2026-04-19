@@ -1,0 +1,1 @@
+timestamp	branch	commit_sha	basis_name	basis_hash	num_parameters	final_mse	probe_mse	train_steps	train_wallclock_ms	transform_time_ms	device	status	notes
