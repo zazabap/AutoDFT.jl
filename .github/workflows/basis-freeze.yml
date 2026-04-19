@@ -1,0 +1,30 @@
+name: basis-freeze
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify frozen surface
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1.10'
+
+      - uses: julia-actions/cache@v2
+
+      - name: Instantiate
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Verify frozen surface (file SHAs + probe + secret)
+        env:
+          BASIS_FREEZE_SALT: ${{ secrets.BASIS_FREEZE_SALT }}
+        run: julia --project=. prepare.jl

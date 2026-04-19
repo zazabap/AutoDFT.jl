@@ -1,0 +1,24 @@
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+/deps/deps.jl
+/deps/build.log
+
+# Julia package cache (don't commit cloned deps)
+/.julia/
+
+# Scratch / tmp
+/tmp/
+/scratch/
+*.tmp
+*.swp
+.DS_Store
+
+# Training checkpoints and loss logs
+/checkpoints/
+/logs/
+*.json.gz
+
+# Local env overrides
+.envrc.local
