@@ -1,0 +1,2 @@
+timestamp	branch	commit_sha	basis_name	basis_hash	num_parameters	final_mse	probe_mse	train_steps	train_wallclock_ms	transform_time_ms	device	status	notes
+2026-04-19T15:31:48.314	main	d902101	TEBD	89b14a6cf7c3f8286e07a9947969f7a493953fdd574ed66e9008b9513b279029	144	2.6960717725e+03	5.6363954729e+03	500	507639.672	0.000	gpu	baseline
