@@ -1,8 +1,8 @@
 [files]
 ".claude/CLAUDE.md" = "b74d3b108f8dcacd2997ca79cf707c8daf13f5adf1e05f96062b87785587a589"
 ".claude/rules/julia-conventions.md" = "d84a889953da3d4abb4e844f1dfbdf8a0c526c000c9295153ba0fcf187da9bb7"
-".github/workflows/CI.yml" = "33847f3131e0895931bb39c7785c383baa548765d8a86e0934be982c61de266d"
-".github/workflows/basis-freeze.yml" = "ea8feca1d36c0c0bd841606f89d43bcfb25c278e3b1cdfb2cd344c3a0a42817a"
+".github/workflows/CI.yml" = "7940536e7e9174489f513ba95f0e1f40a827899491b46fc705dc2fc825b17ac2"
+".github/workflows/basis-freeze.yml" = "1c38f59f79df7a9810a95aefa88c46a2069d21a9bda8886b2e132445f34f3a7c"
 LICENSE = "c742f6b5bd171109452f2d245a0e03c86ea10a8411bb7b669290c2367d5c5d42"
 Makefile = "c357f30e9cb1c850c141b2890f29a7cab96fce82eaa6cdba96b38bb3a25d9753"
 "Manifest.toml" = "1f29892b0f44d4b4905263e3bac4677e72d34ed992fac1bca04d3ac6882e38a6"
@@ -26,4 +26,4 @@ Makefile = "c357f30e9cb1c850c141b2890f29a7cab96fce82eaa6cdba96b38bb3a25d9753"
 qft_identity_mse = 5636.395472862066
 
 [secret]
-manifest_sha = "04355516b813b00f5c70717fa210fc49259844348304cbe09f8b5f9115b92e2b"
+manifest_sha = "ef7031c84655fb2cec8895356fcc97a6b90d473fbd90a305c1371de4c70c8538"

@@ -17,7 +17,9 @@ jobs:
 
       - uses: julia-actions/setup-julia@v2
         with:
-          version: '1.10'
+          # Must match the Julia version used to generate Manifest.toml.
+          # Older minors fail to load 1.12-stamped stdlibs.
+          version: '1.12'
 
       - uses: julia-actions/cache@v2
 

@@ -1,18 +1,22 @@
 # src/bases/registry.jl — EDITABLE
 #
 # Maps basis name strings → (::Type{<:AbstractSparseBasis}) constructor types.
-# `BASELINES` is the fixed seed set for `make baseline`; do NOT remove entries.
+# `BASELINES` is the fixed seed set for `make baseline`.
 # `TRIAL_REGISTRY` is the open set an autoresearch session adds to via
 # `register_basis!("<Name>", <Name>Basis)` at the bottom of a new-basis file.
+#
+# Note: MERABasis is intentionally excluded. ParametricDFT's mera_code asserts
+# `m` must be a power of 2 (>= 2), which conflicts with the frozen m=n=9 config
+# (see `AutoDFT.M_QUBITS`). Re-add it only after that constraint is relaxed or
+# the image size is changed.
 
-using ParametricDFT: QFTBasis, EntangledQFTBasis, TEBDBasis, MERABasis, AbstractSparseBasis
+using ParametricDFT: QFTBasis, EntangledQFTBasis, TEBDBasis, AbstractSparseBasis
 
 """Baselines seeded by `make baseline`. Order defines the TSV row order."""
 const BASELINES = [
     ("QFT",          QFTBasis),
     ("EntangledQFT", EntangledQFTBasis),
     ("TEBD",         TEBDBasis),
-    ("MERA",         MERABasis),
 ]
 
 """Registry of agent-contributed bases. Populated at module-load time via `register_basis!`."""

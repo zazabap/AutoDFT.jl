@@ -14,7 +14,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        julia-version: ['1.10', '1.11']
+        # Manifest.toml is pinned on Julia 1.12; older minors can't load the
+        # 1.12-stamped stdlibs (PrecompileTools / StaticArrays breakage).
+        julia-version: ['1.12', '1']
     steps:
       - uses: actions/checkout@v4
 
