@@ -24,3 +24,6 @@ Makefile = "c357f30e9cb1c850c141b2890f29a7cab96fce82eaa6cdba96b38bb3a25d9753"
 
 [probe]
 qft_identity_mse = 5636.395472862066
+
+[secret]
+manifest_sha = "bab16b8afc07b794687d76ce2351ec2031933a52fbd913601efa7008d4d0c9fa"
