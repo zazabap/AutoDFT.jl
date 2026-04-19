@@ -241,10 +241,62 @@ The implementation session will produce, in order:
    `results.tsv` + `best.tsv`; otherwise leave them empty with a
    `program.md` note instructing the first session to run it.
 
+## Addendum (2026-04-19, post-scaffold): Walsh-Hadamard collapse and DFT gap
+
+After seeding baselines and running 5 trials (branch `autoresearch/initial`,
+commits `20f47e1..3acae5e`), an empirical finding surfaced that sharpens this
+spec:
+
+**All four ParametricDFT "baselines" reduce to the same compressor under the
+top-k MSE metric.** Each of `QFTBasis`, `EntangledQFTBasis`, `TEBDBasis`,
+`MERABasis` has circuit form `H⊗ⁿ · D · H⊗ⁿ` with `D` a diagonal unitary of
+learnable phases. Top-k magnitude selection is invariant under any diagonal
+unitary (`|D c| = |c|`), and `D†` cancels `D` on the retained coefficients
+during inverse. The round-trip therefore computes a Walsh-Hadamard transform
+regardless of the phase values, giving MSE ≈ 2696.07 on the fixture for QFT,
+EntangledQFT, TEBD, MERA, and every phase-only variant the agent tried.
+
+**What the fixture actually rewards.** The fixture is band-limited (Gaussian
+random field, low-pass bandwidth 32); ~3208 of its 262_144 Fourier
+coefficients are non-zero. A standard 2D DFT therefore achieves near-perfect
+reconstruction at `k = 26_214` (MSE ≈ 2.6e-26 in numpy). So the true
+achievable MSE on this fixture is ~0, not ~2700. The 2700 gap is not an
+architectural ceiling — it's that none of the existing baselines implement a
+proper DFT.
+
+**Implication: Yao's `qft_circuit` is not the standard DFT on this einsum
+pipeline.** Empirically (verified by the `BitReversedQFTBasis` trial),
+`|optcode(QFTBasis.tensors..., x)|` does not match `|fft(x)|` even after
+bit-reversal SWAPs. A winning basis likely needs to construct the DFT
+tensor network manually (specify the CPHASE phases as `exp(-2πi jk/N)`
+directly) rather than rely on `Yao.qft_circuit`.
+
+**Revised acceptance interpretation.** The original acceptance rule
+(`final_mse < best_so_far * 0.99`) remains correct — but the target
+is much lower than TEBD's 2696.07. A correctly-constructed DFT basis
+should drive MSE to effectively zero on this fixture; the search space
+for qualitatively different bases is broader than just "variants of
+phase-gate circuits."
+
+**Baseline decision, revisited.** Because the four existing baselines are
+equivalent under this metric, there's a case for collapsing `BASELINES` to a
+single Walsh-Hadamard reference plus an explicit "classical FFT" reference
+(for the theoretical floor). That would be a spec change; the current
+implementation keeps the three non-MERA baselines for continuity with
+ParametricDFT's existing types.
+
 ## Open questions
 
-None at design time.
+- Is the DFT-vs-QFT discrepancy an artefact of how `ParametricDFT.qft_code`
+  wires its einsum indices, or a feature of Yao's circuit semantics? Worth
+  a single focused trial (`DFTBasis` built from hand-specified phases) to
+  find out.
+- Should the fixture be replaced with something less DFT-favorable (e.g.,
+  a natural image rather than a band-limited Gaussian field), so the
+  autoresearch loop rewards bases that differ from DFT? Spec change.
 
 ## Changelog
 
 - 2026-04-19: Initial design approved via brainstorming skill.
+- 2026-04-19 (later): Addendum on Walsh-Hadamard collapse and DFT gap,
+  based on 5 trials on branch `autoresearch/initial`.
