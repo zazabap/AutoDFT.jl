@@ -72,6 +72,7 @@ function run_baseline()
         end
     end
 
+    device = string(_default_device())
     best_mse = Inf
     best_row = ""
     for (name, T) in BASELINES
@@ -84,7 +85,7 @@ function run_baseline()
             num_parameters = num_parameters(basis),
             final_mse = final_mse, probe_mse = probe_mse,
             train_steps = TRAIN_STEPS, train_wallclock_ms = wallclock,
-            transform_time_ms = 0.0, device = "cpu",
+            transform_time_ms = 0.0, device = device,
             status = "baseline", notes = "",
         )
         _append_results_row(; row...)
@@ -94,7 +95,7 @@ function run_baseline()
                              string(num_parameters(basis)),
                              @sprintf("%.10e", final_mse), @sprintf("%.10e", probe_mse),
                              string(TRAIN_STEPS), @sprintf("%.3f", wallclock), "0.000",
-                             "cpu", "baseline", ""), '\t')
+                             device, "baseline", ""), '\t')
         end
     end
     _write_best_row(best_row)
@@ -113,7 +114,8 @@ function run_trial(name::String)
     T = get_basis_type(name)
     probe_mse = run_probe()
     best_mse = _read_best_mse()
-    @info "Running trial" name best_mse
+    device = string(_default_device())
+    @info "Running trial" name best_mse device
     basis, final_mse, wallclock = train_trial(T)
     accepted = final_mse < best_mse * (1 - ACCEPTANCE_REL)
     ts = string(now())
@@ -124,12 +126,12 @@ function run_trial(name::String)
                   string(num_parameters(basis)),
                   @sprintf("%.10e", final_mse), @sprintf("%.10e", probe_mse),
                   string(TRAIN_STEPS), @sprintf("%.3f", wallclock), "0.000",
-                  "cpu", accepted ? "kept" : "dropped", "")
+                  device, accepted ? "kept" : "dropped", "")
     _append_results_row(; timestamp=ts, branch=branch, commit_sha=sha, basis_name=name,
                         basis_hash_=bh, num_parameters=num_parameters(basis),
                         final_mse=final_mse, probe_mse=probe_mse,
                         train_steps=TRAIN_STEPS, train_wallclock_ms=wallclock,
-                        transform_time_ms=0.0, device="cpu",
+                        transform_time_ms=0.0, device=device,
                         status=(accepted ? "kept" : "dropped"), notes="")
     if accepted
         _write_best_row(join(row_fields, '\t'))

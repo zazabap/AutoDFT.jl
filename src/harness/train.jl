@@ -40,7 +40,10 @@ function train_trial(::Type{B};
 end
 
 function _default_device()
-    # ParametricDFT decides :gpu only if `using CUDA` was called and CUDAExt loaded.
-    # We default to :cpu to keep reproducibility tight across machines.
-    return :cpu
+    # Auto-detect: if CUDA is loaded and functional, use :gpu. `src/AutoDFT.jl`
+    # performs `using CUDA` at module load, so ParametricDFT.CUDAExt is
+    # available when we reach this point. Spec says MSE across :cpu and :gpu
+    # agrees to atol=1e-6, so device selection doesn't affect accept/reject
+    # decisions — only wall-clock.
+    return CUDA.functional() ? :gpu : :cpu
 end

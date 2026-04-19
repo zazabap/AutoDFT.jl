@@ -2,7 +2,7 @@
 
 julia_version = "1.12.5"
 manifest_format = "2.0"
-project_hash = "ee7c9fd8ac1e55c935a87473ae181a1d2847607b"
+project_hash = "7ec3ab45343e99ceca330a48bff9e40e101d25dd"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -81,7 +81,7 @@ version = "1.1.3"
     oneAPI = "8f75cd03-7ff8-4ecb-9b8f-daf728133b1b"
 
 [[deps.AutoDFT]]
-deps = ["Dates", "LinearAlgebra", "OMEinsum", "ParametricDFT", "Printf", "Random", "SHA", "TOML"]
+deps = ["CUDA", "Dates", "FFTW", "LinearAlgebra", "OMEinsum", "ParametricDFT", "Printf", "Random", "SHA", "TOML"]
 path = "."
 uuid = "a17d4a8c-1c9d-4d5e-9e3f-7a6b8c2d1f01"
 version = "0.1.0-DEV"

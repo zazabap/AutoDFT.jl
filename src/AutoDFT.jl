@@ -1,6 +1,7 @@
 module AutoDFT
 
 using ParametricDFT
+using CUDA     # triggers ParametricDFT.CUDAExt; enables :gpu device when CUDA.functional()
 using Random
 using LinearAlgebra
 using SHA
