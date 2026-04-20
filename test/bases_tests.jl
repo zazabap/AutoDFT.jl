@@ -47,4 +47,25 @@ using FFTW
         mse_band_limited = AutoDFT.evaluate_basis(b; image = AutoDFT.load_fixture(1))
         @test mse_band_limited < 1.0   # actually ~1e-24; generous bound against perturbations
     end
+
+    @testset "DCTBasis interface + correctness" begin
+        Random.seed!(42)
+        b_small = AutoDFT.DCTBasis(3, 3)
+        @test image_size(b_small) == (8, 8)
+        @test num_parameters(b_small) > 0
+        x = randn(ComplexF64, 8, 8)
+        y = forward_transform(b_small, x)
+        x̂ = inverse_transform(b_small, y)
+        @test x̂ ≈ x atol = 1e-8
+        @test basis_hash(b_small) == basis_hash(b_small)
+
+        # Full-size: DCTBasis must match FFTW.dct
+        using FFTW: dct
+        b = AutoDFT.DCTBasis(9, 9)
+        @test image_size(b) == (512, 512)
+        img = AutoDFT.load_fixture()
+        via_basis = forward_transform(b, img)
+        via_fftw = dct(ComplexF64.(img))
+        @test via_basis ≈ via_fftw atol = 1e-8
+    end
 end
