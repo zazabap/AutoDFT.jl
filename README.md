@@ -95,7 +95,19 @@ dropped grey, log-scale `final_mse`, running-best step line). Summary:
 | QFTBasis     | `5.64e+03` | 360 | baseline |
 | EntangledQFT | `5.64e+03` | 396 | baseline |
 
-### Circuit structure
+### What the win looks like
+
+<img src="docs/reconstruction.png">
+
+Both bases use the *same* tensor network, *same* QFT circuit, *same*
+top-k truncation at k = 26_214. QFTBasis feeds qubits in little-endian
+order, DFTBasis feeds them in reversed significance order. That single
+wiring change is the difference between "2.1% residual energy" and
+"machine-precision zero." The QFT residual panel shows the structured
+grid artefact left by the aliased frequency selection — not white noise,
+a deterministic wrong-frequencies pattern.
+
+### DFT circuit structure
 
 <img src="docs/circuit.png">
 
@@ -115,14 +127,47 @@ to qubits in the opposite significance order, so without the permutation
 the pipeline was computing `P · F · P` instead of `F`. The input-leg
 reversal cancels the redundant `P`. See
 `docs/superpowers/specs/2026-04-19-autoresearch-parametricdft-basis-design.md`
-(addendum) for the full derivation and `autoresearch/initial` for the 5
-dropped trials that led to this finding.
+(addendum) for the full derivation.
+
+## Failed trials
+
+Five bases were tried on branch [`autoresearch/initial`](https://github.com/zazabap/AutoDFT.jl/tree/autoresearch/initial)
+before the DFT fix was found. None met the acceptance threshold; their
+trial code was reverted via `git reset --hard HEAD~1` per `program.md`,
+but each `dropped:` commit preserves the attempt log and `results.tsv`
+retains the MSE row (visible in the progress scatter above).
+
+Two parent circuit structures were modified:
+
+<table>
+<tr><td><img src="docs/circuit_tebd.png" width="100%"></td>
+    <td><img src="docs/circuit_entangled.png" width="100%"></td></tr>
+<tr><td align="center"><b>TEBDBasis (4×4)</b></td>
+    <td align="center"><b>EntangledQFTBasis (4×4)</b></td></tr>
+</table>
+
+| # | Trial | Built on | Modification | MSE | Why it failed |
+|---|---|---|---|---:|---|
+| 1 | `ExtendedTEBDBasis`    | TEBD | add next-nearest-neighbour phase rings (2× the gate count) | `2696.07` | NNN rings are phase-gates; top-k MSE is phase-invariant, so they don't change magnitudes or the top-k selection |
+| 2 | `DeepTEBDBasis`        | TEBD | stack two full TEBD layers end-to-end                       | `1.48e+5` | random phase init drifts too far from identity; 500 Adam steps can't recover |
+| 3 | `HadSandwichTEBDBasis` | TEBD | add an extra Hadamard layer at the output                   | `1.48e+5` | same divergence pattern as DeepTEBD |
+| 4 | `LearnedHadamardBasis` | (none — trivial H⊗ⁿ) | replace all phase gates with learnable single-qubit unitaries, init at H | `2696.07` | H⊗ⁿ is a local minimum of top-k MSE under single-qubit perturbations; Adam can't escape |
+| 5 | `BitReversedQFTBasis`  | QFT  | append SWAP gates to the **output** for bit reversal        | `5636.40` | bit-reversal on the output gives `P · F · P`, not `F`; the correct fix is reversing the **input** (that's what DFTBasis does) |
+
+The structural lesson: trials 1, 2, 3, 4 all share the form `H⊗ⁿ · D · H⊗ⁿ`
+where `D` is a diagonal unitary. `|D c| = |c|`, so top-k selection is
+identical for any such `D`, and `D†` cancels `D` on the inverse. Every
+phase-only variant of TEBD/EntangledQFT/MERA therefore collapses to the
+Walsh-Hadamard compressor at `MSE = 2696.07`. Trial 5 almost found the
+DFT fix but permuted on the wrong side. Trial 6 (DFTBasis) permuted the
+input instead — that one landed.
 
 Regenerate the plots after a new trial with:
 
 ```bash
-julia --project=. scripts/plot_results.jl   # writes docs/progress.png
-julia --project=. scripts/plot_circuit.jl   # writes docs/circuit{,_full}.png
+julia --project=. scripts/plot_results.jl        # progress.png
+julia --project=. scripts/plot_circuit.jl        # circuit{,_full,_tebd,_entangled}.png
+julia --project=. scripts/plot_reconstruction.jl # reconstruction.png (QFT vs DFT)
 ```
 
 ## File map
