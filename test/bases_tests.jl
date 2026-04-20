@@ -68,4 +68,23 @@ using FFTW
         via_fftw = dct(ComplexF64.(img))
         @test via_basis ≈ via_fftw atol = 1e-8
     end
+
+    @testset "BlockDCTBasis interface + correctness" begin
+        Random.seed!(42)
+        # Use block_size=4 for the m=n=3 small case (block evenly divides 8).
+        b_small = AutoDFT.BlockDCTBasis(3, 3; block_size = 4)
+        @test image_size(b_small) == (8, 8)
+        @test num_parameters(b_small) > 0
+        x = randn(ComplexF64, 8, 8)
+        y = forward_transform(b_small, x)
+        x̂ = inverse_transform(b_small, y)
+        @test x̂ ≈ x atol = 1e-8
+
+        # Full-size: block_size=32 round-trip
+        b = AutoDFT.BlockDCTBasis(9, 9; block_size = 32)
+        @test image_size(b) == (512, 512)
+        img = AutoDFT.load_fixture()
+        rec = inverse_transform(b, forward_transform(b, ComplexF64.(img)))
+        @test ComplexF64.(img) ≈ rec atol = 1e-8
+    end
 end
