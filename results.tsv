@@ -1,1 +1,4 @@
 timestamp	branch	commit_sha	basis_name	basis_hash	num_parameters	final_mse	probe_mse	train_steps	train_wallclock_ms	transform_time_ms	device	status	notes
+2026-04-20T01:50:55.592	harness/multi-fixture	68fe4ed	QFT	012adfad77efa6ec774b64112e2c54a3bb715f51781f7addb76402635e5547c4	360	3.8918147543e+03	3.8918147543e+03	500	522023.435	0.000	gpu	baseline	
+2026-04-20T01:58:10.365	harness/multi-fixture	68fe4ed	EntangledQFT	3e29f1d03d4dc54fdc15251e8d931a57bc502acd17ececef04e9024bae23d390	396	3.8918147543e+03	3.8918147543e+03	500	428206.333	0.000	gpu	baseline	
+2026-04-20T02:15:02.817	harness/multi-fixture	68fe4ed	TEBD	89b14a6cf7c3f8286e07a9947969f7a493953fdd574ed66e9008b9513b279029	144	2.2601094397e+03	3.8918147543e+03	500	1009835.913	0.000	gpu	baseline	

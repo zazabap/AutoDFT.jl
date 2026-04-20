@@ -1,0 +1,2 @@
+timestamp	branch	commit_sha	basis_name	basis_hash	num_parameters	final_mse	probe_mse	train_steps	train_wallclock_ms	transform_time_ms	device	status	notes
+2026-04-20T02:15:02.817	harness/multi-fixture	68fe4ed	TEBD	89b14a6cf7c3f8286e07a9947969f7a493953fdd574ed66e9008b9513b279029	144	2.2601094397e+03	3.8918147543e+03	500	1009835.913	0.000	gpu	baseline
