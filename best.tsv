@@ -1,2 +1,2 @@
 timestamp	branch	commit_sha	basis_name	basis_hash	num_parameters	final_mse	probe_mse	train_steps	train_wallclock_ms	transform_time_ms	device	status	notes
-2026-04-20T04:02:33.080	harness/multi-fixture	647d0c7	DCT	289dd232eaaee25d1c4d07c4533044f3882307bcabeb3e14b7ab0d9ba2bc1f1c	524288	7.2156936766e+02	3.8918147543e+03	500	165399.198	0.000	gpu	kept
+2026-04-20T04:09:55.621	harness/multi-fixture	2b0b846	BlockDCT	5c14a4c9296fc743ef3ff9e2dd3bffb8ca17fafe724b2ef3c7f02a3241dfdd22	524288	6.4191330432e+02	3.8918147543e+03	500	141301.544	0.000	gpu	kept
