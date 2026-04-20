@@ -285,18 +285,66 @@ single Walsh-Hadamard reference plus an explicit "classical FFT" reference
 implementation keeps the three non-MERA baselines for continuity with
 ParametricDFT's existing types.
 
+## Addendum B (2026-04-20, post-DFT-win): sign convention + exhaustion
+
+**DFTBasis landed on 2026-04-19 (commit `6f14daa`) at MSE 3.54e-24 — machine
+precision, 26 orders of magnitude below TEBD.** The fix was an input-leg
+permutation on the einsum (`qubit_perm = vcat(reverse(1:m), reverse(m+1:m+n))`):
+the QFT tensors were already correct, only the bits were being fed to qubits
+in reversed significance order.
+
+**Numerical validation (m=n=3, 64-dim transforms):**
+
+| Statement | Relative error |
+|---|---:|
+| `F_qft = F_dft · P` where P is 2D bit-reversal | 2.2e-16 |
+| `DFT(bit-reverse(img)) = QFT(img)` pointwise | 2.5e-16 |
+| Both unitary: `FF† = N·I` | 2.2e-16 |
+| `F_dft = conj(F_std)` where F_std is textbook 2D DFT | 7.9e-15 |
+
+So DFTBasis doesn't implement the textbook *forward* DFT (`exp(-2πi kj/N)`) —
+it implements the *inverse / conjugate* variant (`exp(+2πi kj/N)`). This is
+irrelevant for compression because top-k magnitude selection is identical
+under global conjugation (`|conj(F·x)| = |F·x|`), but documenting it for
+precision: "DFTBasis *is the textbook inverse DFT*, not the forward DFT."
+The earlier addendum language "true 2D DFT" stands in the loose sense that
+any bijective unitary of the 2D-DFT family saturates compression of this
+band-limited fixture.
+
+**Search-space exhaustion.** With machine-precision MSE achieved, the
+acceptance rule (`final_mse < best * 0.99`) makes further trials on this
+fixture unsalvageable: no basis can meaningfully improve on ~3.5e-24, so
+every new attempt is dropped at the `kept` gate regardless of its
+mathematical merit. The productive next directions are spec changes, not
+more basis variants:
+
+1. **Harder fixture** — replace the band-limited Gaussian field with a
+   natural image (e.g., a photograph or MNIST sample upscaled to 512×512).
+   Non-band-limited content means DFT's compression is no longer perfect,
+   and bases that exploit spatial structure (wavelets, MERA with proper
+   padding, hybrid transforms) could beat pure DFT.
+2. **Tighter sparsity** — drop k from 26_214 (10%) to, say, 1% or 0.1%.
+   At extreme sparsity, DFT no longer captures all the energy, and
+   alternative bases that concentrate energy differently have a chance.
+3. **Multi-fixture evaluation** — evaluate each basis on a *set* of images
+   and rank by average MSE. Rewards bases that generalize, not just
+   overfit one fixture.
+
+All three are harness-update PRs (edit frozen files, rehash, rotate salt).
+Until one is landed, the autoresearch loop has effectively converged.
+
 ## Open questions
 
-- Is the DFT-vs-QFT discrepancy an artefact of how `ParametricDFT.qft_code`
-  wires its einsum indices, or a feature of Yao's circuit semantics? Worth
-  a single focused trial (`DFTBasis` built from hand-specified phases) to
-  find out.
-- Should the fixture be replaced with something less DFT-favorable (e.g.,
-  a natural image rather than a band-limited Gaussian field), so the
-  autoresearch loop rewards bases that differ from DFT? Spec change.
+- Should a follow-up session replace the fixture or tighten the sparsity
+  budget before running more trials? Either change opens meaningful
+  exploration room; without a change, more autoresearch is guaranteed to
+  be pure-overhead dropped trials.
 
 ## Changelog
 
 - 2026-04-19: Initial design approved via brainstorming skill.
 - 2026-04-19 (later): Addendum on Walsh-Hadamard collapse and DFT gap,
   based on 5 trials on branch `autoresearch/initial`.
+- 2026-04-20: Addendum B — sign convention clarification (DFTBasis is the
+  inverse-DFT, not forward), numerical validation at m=n=3, and search-
+  space-exhaustion analysis proposing three productive spec changes.
