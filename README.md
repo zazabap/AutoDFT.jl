@@ -85,8 +85,8 @@ earlier so the loop can keep iterating through many more experiments.
 
 ## Current leader
 
-See the bar chart at the top of this README for the full picture (baselines
-in blue, kept in green, dropped in red, log scale). Summary:
+See the scatter above for the full trial history (baselines blue, kept green,
+dropped grey, log-scale `final_mse`, running-best step line). Summary:
 
 | basis | MSE | params | note |
 |---|---|---|---|
@@ -95,20 +95,34 @@ in blue, kept in green, dropped in red, log scale). Summary:
 | QFTBasis     | `5.64e+03` | 360 | baseline |
 | EntangledQFT | `5.64e+03` | 396 | baseline |
 
-`DFTBasis` reuses the ParametricDFT-emitted QFT tensors unchanged; the win
+### Circuit structure
+
+<img src="docs/circuit.png">
+
+Rendered by `ParametricDFT.plot_circuit` at pedagogical size (m = n = 4,
+8 qubits). The actual fixture is m = n = 9 (18 qubits, same structure —
+see `docs/circuit_full.png` or regenerate with `scripts/plot_circuit.jl`).
+Row qubits `|x_i⟩` form the row DFT, column qubits `|y_i⟩` form the column
+DFT, separated by the dashed line. Blue `H` are Hadamards; green `M_k` are
+controlled-phase gates with phase `2π/2^k`. This is the textbook 2D QFT —
+no learnable parameters in the "correct DFT" construction.
+
+`DFTBasis` reuses these exact tensors unchanged; the win over `QFTBasis`
 comes from permuting the einsum's *input*-leg labels
-(`qubit_perm = vcat(reverse(1:m), reverse(m+1:m+n))`). Yao's `qft_circuit`
-does produce the textbook QFT, but `reshape(img, 2, 2, ...)` feeds bits to
-qubits in the opposite significance order, so the circuit was computing
-`P · F · P` instead of `F`. The input-leg permutation cancels the redundant
-`P`. See `docs/superpowers/specs/2026-04-19-autoresearch-parametricdft-basis-design.md`
+(`qubit_perm = vcat(reverse(1:m), reverse(m+1:m+n))`). The Yao-emitted
+circuit *is* the textbook QFT, but `reshape(img, 2, 2, ...)` feeds bits
+to qubits in the opposite significance order, so without the permutation
+the pipeline was computing `P · F · P` instead of `F`. The input-leg
+reversal cancels the redundant `P`. See
+`docs/superpowers/specs/2026-04-19-autoresearch-parametricdft-basis-design.md`
 (addendum) for the full derivation and `autoresearch/initial` for the 5
 dropped trials that led to this finding.
 
-Regenerate the plot after a new trial with:
+Regenerate the plots after a new trial with:
 
 ```bash
 julia --project=. scripts/plot_results.jl   # writes docs/progress.png
+julia --project=. scripts/plot_circuit.jl   # writes docs/circuit{,_full}.png
 ```
 
 ## File map
