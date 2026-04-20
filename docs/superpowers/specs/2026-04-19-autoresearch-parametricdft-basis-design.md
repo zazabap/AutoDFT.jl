@@ -333,18 +333,116 @@ more basis variants:
 All three are harness-update PRs (edit frozen files, rehash, rotate salt).
 Until one is landed, the autoresearch loop has effectively converged.
 
+## Addendum C (2026-04-20, post-multi-fixture): two fixtures + no-op-training bug
+
+The multi-fixture eval protocol landed on branch `harness/multi-fixture`
+(fork point `807ace7`). `evaluate_basis` now averages `loss_function(…)`
+across every entry in `load_fixtures()`, and the default fixture set is
+two images:
+
+1. **`data/fixture_512.bin`** — the original band-limited Gaussian random
+   field (seed 42, low-pass bandwidth 32). DFT-friendly.
+2. **`data/fixture2_512.bin`** — a piecewise-smooth image (seed 43):
+   overlapping rectangles, a diagonal stripe, four Gaussian bumps, and a
+   low-amplitude noise floor. Non-band-limited; DFT cannot achieve
+   near-zero MSE at k=26_214 because sharp edges spread energy over the
+   full Fourier spectrum.
+
+**Results (initial trials on `harness/multi-fixture`):**
+
+| basis | MSE (mean over 2 fixtures) | params | note |
+|---|---:|---:|---|
+| QFT          | 3891.81 | 360    | baseline (Walsh-Hadamard floor) |
+| EntangledQFT | 3891.81 | 396    | baseline (ties QFT — phases invariant) |
+| TEBD         | 2260.11 | 144    | baseline (local gates help on edges) |
+| DFTBasis     |  837.76 | 360    | kept — DFT from main branch, works without additional change |
+| DCTBasis     |  721.57 | 524288 | kept — even-symmetric extension → smaller Gibbs tail on fixture 2 |
+| **BlockDCTBasis (32×32)** | **641.91** | 524288 | **kept, leader** — JPEG-style block-diagonal DCT localizes the transform |
+
+BlockDCTBasis is **71.6% better than TEBD** and 23.3% better than DFT. The
+progression DFT → DCT → BlockDCT echoes the historical progression that
+led to JPEG: a global orthogonal transform → a global even-symmetric
+transform → a block-local version of the latter.
+
+### No-op-training bug (surfaced by the multi-fixture session)
+
+Empirically confirmed: **`train_basis` is currently a no-op under this
+harness's default config.** `_train_basis_core` in ParametricDFT tracks
+`best_tensors` via the check
+
+```julia
+if val_loss < best_val_loss
+    best_tensors = copy.(current_tensors)
+    best_val_loss = val_loss
+end
+```
+
+With the frozen config `validation_split = 0.0`, the validation set is
+empty; `val_loss` is computed from an empty `validation_data` array and
+evaluates to `Inf` on every epoch. `best_val_loss` starts at `Inf`, and
+`Inf < Inf` is always false, so `best_tensors` *never updates from the
+initial tensors*. The final basis returned is the initial one, regardless
+of how many Adam steps were taken or whether they reduced training loss.
+
+**Empirical confirmation:**
+- QFTBasis with zero-initialized phases: `final_mse` exactly matches the
+  `run_probe()` value (no phase learning happened).
+- DFTEntangledBasis with zero-initialized entangling phases: after 500
+  Adam steps, phases are still zero. Hence dropped.
+
+**Implications for this leaderboard:**
+- Every row in `results.tsv` (both baseline and trial) reflects the
+  *initial* basis configuration, not a trained one. The leaderboard is
+  effectively an "initialization quality" benchmark.
+- Parametric bases with learnable phases (EntangledQFT, TEBD, DeepTEBD,
+  HadSandwichTEBD, DFTEntangled) are functionally identical to their
+  zero-init forms under this harness.
+- BlockDCTBasis's win is real — it's a fixed (non-parametric) transform
+  whose initialization is exactly what gets evaluated.
+- The 500-step training budget is wasted wall-clock per trial.
+
+**Fix paths (not applied in this PR):**
+1. **Upstream fix.** Modify `_train_basis_core` to update `best_tensors`
+   based on `train_loss` when `validation_split == 0.0`. This is the
+   right fix and should land in ParametricDFT.jl upstream. Would also
+   require bumping the pinned SHA in our `Project.toml` once merged.
+2. **Local workaround.** Set `validation_split = 0.1` in the harness.
+   With only 2 fixtures this leaves 0 training images after the split —
+   fragile. Only viable if the fixture count grows.
+3. **Reimplement train logic.** Bypass `train_basis` entirely in
+   `src/harness/train.jl` and roll our own loop that snapshots the
+   minimum-training-loss tensors. Works but is a significant harness
+   change; would need recomputing probe and rehashing.
+
+**Recommendation.** Until the bug is fixed, treat the search space as
+"fixed-initialization bases." BlockDCTBasis at 642 is genuinely the best
+FIXED transform we've found; to beat it meaningfully would require either
+(a) a smarter fixed transform (e.g., per-block learned basis via a
+pre-training step outside the harness), or (b) the harness bug getting
+fixed so training actually works.
+
 ## Open questions
 
-- Should a follow-up session replace the fixture or tighten the sparsity
-  budget before running more trials? Either change opens meaningful
-  exploration room; without a change, more autoresearch is guaranteed to
-  be pure-overhead dropped trials.
+- Should upstream `_train_basis_core` be patched to update
+  `best_tensors` when `validation_split == 0`? This is the cleanest path
+  and benefits everyone using `ParametricDFT.train_basis`.
+- Is the DFT-vs-QFT discrepancy fixable in upstream `qft_code` (change
+  the einsum input-leg convention), so downstream callers don't have to
+  permute?
+- Should the fixture set grow further (e.g., 4-8 images spanning text,
+  photos, medical scans) once the training bug is fixed so that
+  genuinely learnable bases have room to differentiate?
 
 ## Changelog
 
 - 2026-04-19: Initial design approved via brainstorming skill.
-- 2026-04-19 (later): Addendum on Walsh-Hadamard collapse and DFT gap,
+- 2026-04-19 (later): Addendum A on Walsh-Hadamard collapse and DFT gap,
   based on 5 trials on branch `autoresearch/initial`.
 - 2026-04-20: Addendum B — sign convention clarification (DFTBasis is the
   inverse-DFT, not forward), numerical validation at m=n=3, and search-
   space-exhaustion analysis proposing three productive spec changes.
+- 2026-04-20 (multi-fixture): Addendum C — second fixture introduced,
+  eval protocol now averages across all fixtures. Surfaces the no-op-
+  training bug in `_train_basis_core` (with `validation_split=0`, final
+  basis = initial basis). BlockDCTBasis(32×32) leads at MSE 641.91 on
+  fixed-initialization comparison.
