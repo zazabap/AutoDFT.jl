@@ -1,3 +1,5 @@
+<img src="docs/progress.png">
+
 # AutoDFT.jl
 
 A toy for studying autonomous ML research loops. An LLM agent edits
@@ -83,9 +85,12 @@ earlier so the loop can keep iterating through many more experiments.
 
 ## Current leader
 
+See the bar chart at the top of this README for the full picture (baselines
+in blue, kept in green, dropped in red, log scale). Summary:
+
 | basis | MSE | params | note |
 |---|---|---|---|
-| **DFTBasis** | `3.54e-24` | 360 | true 2D DFT, `src/bases/dft_basis.jl` |
+| **DFTBasis** | `3.54e-24` | 360 | true 2D DFT, `src/bases/dft_basis.jl` (kept) |
 | TEBDBasis    | `2.70e+03` | 144 | baseline |
 | QFTBasis     | `5.64e+03` | 360 | baseline |
 | EntangledQFT | `5.64e+03` | 396 | baseline |
@@ -97,8 +102,14 @@ does produce the textbook QFT, but `reshape(img, 2, 2, ...)` feeds bits to
 qubits in the opposite significance order, so the circuit was computing
 `P · F · P` instead of `F`. The input-leg permutation cancels the redundant
 `P`. See `docs/superpowers/specs/2026-04-19-autoresearch-parametricdft-basis-design.md`
-(addendum) for the full derivation and `autoresearch/initial` for 5 dropped
-trials that led to this finding.
+(addendum) for the full derivation and `autoresearch/initial` for the 5
+dropped trials that led to this finding.
+
+Regenerate the plot after a new trial with:
+
+```bash
+julia --project=. scripts/plot_results.jl   # writes docs/progress.png
+```
 
 ## File map
 

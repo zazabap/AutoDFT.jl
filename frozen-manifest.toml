@@ -5,9 +5,9 @@
 ".github/workflows/basis-freeze.yml" = "1c38f59f79df7a9810a95aefa88c46a2069d21a9bda8886b2e132445f34f3a7c"
 LICENSE = "c742f6b5bd171109452f2d245a0e03c86ea10a8411bb7b669290c2367d5c5d42"
 Makefile = "c357f30e9cb1c850c141b2890f29a7cab96fce82eaa6cdba96b38bb3a25d9753"
-"Manifest.toml" = "edca581d3a112010748307917299e5d6b1949076c6f8dbf8e0d1926b25c941a7"
-"Project.toml" = "dde6c0f0a96e46187deaf4587b4e2b38f95fa119a62ff340e2d8a38aeb9f87be"
-"README.md" = "14773f1d8de7e8fe064128e935b9fe5df159397ad84a15ce5ba613cecb8eb8e5"
+"Manifest.toml" = "3b11b092d3342bad8ea55c08ac1b82adbe1db149a7400d0e992f80f8c24aa99c"
+"Project.toml" = "4be5e466ad3528dd4782aa6e20ad11e8ddbb803a52ff6b7ecdfddb2751a62415"
+"README.md" = "3506e148ec33337579aa99eeac24efdaef1969f9c0f7f6f8c33151ad2c1a258e"
 "data/fixture_512.bin" = "b38f4defb6acecba5131ca5b4c5caa0d1dd63df97f6192112ab953eaa700943d"
 "prepare.jl" = "4a1c4e6f16f990fd878a83f12570fcc973783a22acee1b2b9ae12e7dd0771d78"
 "program.md" = "ee05e8be505f1ee8423ada217b38537059b8476a448b85af8aed4a61e84b9204"
@@ -26,4 +26,4 @@ Makefile = "c357f30e9cb1c850c141b2890f29a7cab96fce82eaa6cdba96b38bb3a25d9753"
 qft_identity_mse = 5636.395472862066
 
 [secret]
-manifest_sha = "49e2d5bcddff9083dc372cefc1857e5a5e359cbad99b5aa884bb752f6f3c812a"
+manifest_sha = "9998ddca028ef9dff162c464b35392a4a1fdbd6ce520d8777fd8d7473f195cf5"
