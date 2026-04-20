@@ -8,9 +8,9 @@
 #   - A direct numerical check shows the orthonormal 2D DCT-II with the same
 #     top-k=26_214 truncation gives mean MSE 721.57 on the same fixtures —
 #     a 14% improvement. The advantage is entirely on fixture 2 (1443.12 vs
-#     1675.52), where DCT's implicit even-symmetric boundary extension handles
-#     sharp edges better than DFT's periodic extension (the Gibbs tail is
-#     smaller for DCT).
+#     1675.52), where DCT's implicit even-symmetric boundary extension
+#     handles sharp edges better than DFT's periodic extension (the Gibbs
+#     tail is smaller for DCT).
 #   - A key prior-session finding: the harness's `train_basis` with
 #     `validation_split = 0.0` snapshots the INITIAL tensors into `best_tensors`
 #     and never updates them (since val_loss < Inf is always false). So the
@@ -20,51 +20,70 @@
 #     good initial construction; choosing DCT over DFT for the initial basis
 #     is the whole play.
 #
-# Construction:
-#   The 1D DCT-II matrix C of size 2^m × 2^m is built directly from
-#   C[k, n] = α(k) cos(π(n + 1/2)k / N), with α(0) = 1/√N, α(k>0) = √(2/N).
-#   This matrix is orthonormal (C Cᵀ = I). Reshape C as a rank-(2m) tensor
-#   with m "output" bit legs and m "input" bit legs — the resulting tensor
-#   is NOT separable into a tensor product of 2×2 gates (DCT is inherently
-#   non-local on bits), but it is a single tensor that the einsum handles.
-#
-#   2D DCT: y[r_out, c_out] = Σ_{r_in, c_in} C[r_out, r_in] C[c_out, c_in] x[r_in, c_in]
-#
-#   Einsum with labels:
-#     - Row-DCT tensor legs: [row_out_bits..., row_in_bits...]
-#     - Col-DCT tensor legs: [col_out_bits..., col_in_bits...]
-#     - Image input legs:    [row_in_bits..., col_in_bits...]
-#     - Image output legs:   [row_out_bits..., col_out_bits...]
-#
-# Inverse:
-#   Since C is real orthonormal, C⁻¹ = Cᵀ. The inverse of 2D DCT is
-#   x = Cᵀ y C. Since loss_function always passes `conj.(tensors)` to the
-#   inverse einsum, and conj(C) = C (real), we provide an inverse einsum that
-#   *contracts on output legs instead of input legs*, reusing the same tensor.
-#   The output legs of the inverse einsum are the image input bits.
-#
-# Notes:
-#   - The 2m = 18-leg tensor at m=9 has 2^18 = 262,144 complex entries (≈2 MB).
-#     Two such tensors + the image tensor fit comfortably in GPU memory. A
-#     single contraction on GPU runs in ~20 ms empirically, so the 500 steps
-#     × 2 images training (a no-op for final MSE but still required to run)
-#     completes in a minute or two.
-#   - `classify_manifold` will likely put C on PhaseManifold (non-unitary
-#     because non-square? no, C is 2^m × 2^m orthogonal → unitary → UnitaryManifold).
-#     That's fine — training is a no-op for final_mse anyway, because the
-#     initial tensors are the ones snapshotted into best_tensors.
+# Construction challenge:
+#   The DCT matrix is NOT expressible as a tensor product of 2×2 gates, so
+#   a Yao-style gate-by-gate einsum is not possible. Instead we build a
+#   custom AbstractEinsum subtype (`DCTEinCode`) that:
+#     - accepts the two C matrices as 2^m × 2^m (ComplexF64) matrices,
+#     - reshapes the `(2, 2, ..., 2)`-input image to `(2^m, 2^n)` internally,
+#     - performs y = C_row * X * C_col^T (forward) or X = C_row^T * Y * C_col (inverse),
+#     - reshapes the result back to `(2, 2, ..., 2)` for compatibility.
+#   Because training.jl does `Matrix{ComplexF64}(t)` on each init tensor (line
+#   73), each C tensor must be a 2D Matrix — which is the case here.
 
 import ParametricDFT: forward_transform, inverse_transform,
                       image_size, num_parameters, basis_hash
-using ParametricDFT: AbstractSparseBasis, optimize_code_cached
+using ParametricDFT: AbstractSparseBasis
 using OMEinsum
 using SHA: sha256
+using LinearAlgebra: transpose
+
+"""
+    DCTEinCode <: OMEinsum.AbstractEinsum
+
+Custom einsum-like callable that, when invoked as
+`code(C_row::Matrix, C_col::Matrix, image_tensor)`, computes either
+the 2D DCT (`inverse = false`) or inverse 2D DCT (`inverse = true`) of
+`image_tensor`. Accepts 2-leg matrix inputs for the two C matrices and a
+`(2, 2, ..., 2)` input image tensor. Returns a `(2, 2, ..., 2)` tensor.
+
+We subtype `OMEinsum.AbstractEinsum` so `train.jl`'s `optcode::AbstractEinsum`
+signature accepts this object. The interface methods (`getixsv`, `getiyv`,
+`labeltype`) return placeholder values — the actual contraction pattern is
+hand-coded in the call method.
+"""
+struct DCTEinCode <: OMEinsum.AbstractEinsum
+    inverse::Bool
+    m::Int
+    n::Int
+end
+
+OMEinsum.getixsv(c::DCTEinCode) = Vector{Int}[
+    [1, 2], [3, 4], collect(5 : (4 + c.m + c.n)),
+]
+OMEinsum.getiyv(c::DCTEinCode) = collect(5 : (4 + c.m + c.n))
+OMEinsum.labeltype(::DCTEinCode) = Int
+
+function (c::DCTEinCode)(C_row::AbstractMatrix, C_col::AbstractMatrix, x::AbstractArray)
+    total = c.m + c.n
+    M = 2^c.m
+    N = 2^c.n
+    X = reshape(x, M, N)
+    if c.inverse
+        # x = C_rowᵀ Y C_col   (since C's are real orthogonal, the transposed
+        # matrices realise the inverse)
+        Y = transpose(C_row) * X * C_col
+    else
+        Y = C_row * X * transpose(C_col)
+    end
+    return reshape(Y, fill(2, total)...)
+end
 
 """
     _dct_matrix(N::Int) -> Matrix{Float64}
 
-Build the orthonormal DCT-II matrix of size N × N.
-C[k+1, n+1] = α(k) cos(π(n + 1/2)k / N), α(0) = 1/√N, α(k>0) = √(2/N).
+Orthonormal DCT-II matrix: C[k+1, n+1] = α(k) cos(π(n + 1/2)k / N),
+with α(0) = 1/√N and α(k>0) = √(2/N). C is real orthogonal: C Cᵀ = I.
 """
 function _dct_matrix(N::Int)
     C = zeros(Float64, N, N)
@@ -78,79 +97,27 @@ function _dct_matrix(N::Int)
 end
 
 """
-    _dct_tensor(m::Int) -> Array{ComplexF64, 2m}
-
-Reshape the 2^m × 2^m DCT-II matrix as a rank-(2m) tensor with m output
-bit legs followed by m input bit legs. Julia column-major reshape matches
-the convention that the fastest-varying axis corresponds to the
-least-significant bit.
-"""
-function _dct_tensor(m::Int)
-    N = 2^m
-    C = _dct_matrix(N)
-    return reshape(ComplexF64.(C), fill(2, 2 * m)...)
-end
-
-"""
-    dct_code(m::Int, n::Int; inverse::Bool=false) -> optcode
-
-Build the optimized einsum for 2D DCT on a 2^m × 2^n image. For `inverse=true`,
-the einsum contracts on output legs (yielding the inverse DCT via C^T y C on
-square real orthogonal matrices).
-"""
-function dct_code(m::Int, n::Int; inverse::Bool=false)
-    total = m + n
-    # Unique leg labels
-    row_out = collect(1:m)
-    col_out = collect((m + 1):(m + n))
-    row_in = collect((m + n + 1):(2m + n))
-    col_in = collect((2m + n + 1):(2m + 2n))
-
-    # For the forward transform: tensor axes match (row_out..., row_in...) ordering,
-    # so first m tensor axes carry `row_out` labels, next m carry `row_in` labels.
-    C_row_legs = vcat(row_out, row_in)
-    C_col_legs = vcat(col_out, col_in)
-    img_legs = vcat(row_in, col_in)        # input image legs
-    out_legs = vcat(row_out, col_out)      # output image legs
-
-    if inverse
-        # Inverse: image-freq has out_legs, output is reconstructed image with img_legs.
-        # Contracting on (row_out, col_out) gives Σ C[row_out, row_in] y[row_out, col_out]
-        # ... = (C^T y)[row_in, col_out]; repeating for col gives (C^T y C)[row_in, col_in].
-        code = OMEinsum.DynamicEinCode([C_row_legs, C_col_legs, out_legs], img_legs)
-    else
-        code = OMEinsum.DynamicEinCode([C_row_legs, C_col_legs, img_legs], out_legs)
-    end
-
-    size_dict = Dict{Int, Int}()
-    for label in vcat(row_out, col_out, row_in, col_in)
-        size_dict[label] = 2
-    end
-    optcode = optimize_code_cached(code, size_dict, OMEinsum.TreeSA())
-    return optcode
-end
-
-"""
     DCTBasis <: AbstractSparseBasis
 
-2D DCT-II basis. `tensors` holds two copies of the reshape-reshaped DCT matrix
-(one for rows, one for columns). Both the forward and inverse einsums contract
-over the same tensors — training is effectively a no-op under the harness's
-`validation_split = 0.0` snapshot behaviour, so these are fixed DCT matrices.
+2D DCT-II basis. `tensors` holds two `(2^m × 2^m)` Matrix{ComplexF64} copies
+(one each for row and column DCT matrices). Both `optcode` and `inverse_code`
+are `DCTEinCode` instances that apply the standard 2D DCT by matrix
+multiplication. C is real orthogonal, so `conj(C) == C`, which makes the
+inverse use of `conj.(tensors)` in `loss_function` a no-op.
 """
 struct DCTBasis <: AbstractSparseBasis
     m::Int
     n::Int
     tensors::Vector
-    optcode::OMEinsum.AbstractEinsum
-    inverse_code::OMEinsum.AbstractEinsum
+    optcode::DCTEinCode
+    inverse_code::DCTEinCode
 end
 
 function DCTBasis(m::Int, n::Int)
-    C_row = _dct_tensor(m)
-    C_col = _dct_tensor(n)
-    optcode = dct_code(m, n)
-    inverse_code = dct_code(m, n; inverse = true)
+    C_row = Matrix{ComplexF64}(_dct_matrix(2^m))
+    C_col = Matrix{ComplexF64}(_dct_matrix(2^n))
+    optcode = DCTEinCode(false, m, n)
+    inverse_code = DCTEinCode(true, m, n)
     return DCTBasis(m, n, Any[C_row, C_col], optcode, inverse_code)
 end
 
@@ -189,13 +156,12 @@ function basis_hash(b::DCTBasis)
     return bytes2hex(sha256(take!(io)))
 end
 
-# Train dispatch — training is a no-op under harness validation_split=0.0 but
-# still required to run. Use the DCT tensors as initial state.
+# Train dispatch — returns the fixed DCT matrices and codes.
 function ParametricDFT._init_circuit(::Type{DCTBasis}, m, n; kwargs...)
-    C_row = _dct_tensor(m)
-    C_col = _dct_tensor(n)
-    optcode = dct_code(m, n)
-    inverse_code = dct_code(m, n; inverse = true)
+    C_row = Matrix{ComplexF64}(_dct_matrix(2^m))
+    C_col = Matrix{ComplexF64}(_dct_matrix(2^n))
+    optcode = DCTEinCode(false, m, n)
+    inverse_code = DCTEinCode(true, m, n)
     return optcode, inverse_code, Any[C_row, C_col]
 end
 
