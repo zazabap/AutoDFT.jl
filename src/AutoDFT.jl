@@ -21,7 +21,14 @@ const ACCEPTANCE_REL = 0.01                       # ≥1% relative improvement
 
 # Frozen paths
 const REPO_ROOT     = normpath(joinpath(@__DIR__, ".."))
-const FIXTURE_PATH  = joinpath(REPO_ROOT, "data", "fixture_512.bin")
+# Fixtures in evaluation order. `load_fixture()` returns the first by default;
+# `load_fixtures()` returns all. `evaluate_basis` averages MSE across all.
+const FIXTURE_PATHS = [
+    joinpath(REPO_ROOT, "data", "fixture_512.bin"),   # 1: band-limited Gaussian (seed 42)
+    joinpath(REPO_ROOT, "data", "fixture2_512.bin"),  # 2: piecewise-smooth + edges (seed 43)
+]
+# Backward-compat alias — some code still references FIXTURE_PATH.
+const FIXTURE_PATH  = FIXTURE_PATHS[1]
 const MANIFEST_PATH = joinpath(REPO_ROOT, "frozen-manifest.toml")
 const RESULTS_PATH  = joinpath(REPO_ROOT, "results.tsv")
 const BEST_PATH     = joinpath(REPO_ROOT, "best.tsv")
@@ -36,7 +43,7 @@ include("harness/train.jl")
 include("bases/registry.jl")
 include("runners.jl")
 
-export load_fixture, run_probe, evaluate_basis, train_trial
+export load_fixture, load_fixtures, run_probe, evaluate_basis, train_trial
 export BASELINES, TRIAL_REGISTRY, register_basis!
 export run_baseline, run_trial
 

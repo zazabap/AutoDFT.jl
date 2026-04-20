@@ -1,2 +1,0 @@
-timestamp	branch	commit_sha	basis_name	basis_hash	num_parameters	final_mse	probe_mse	train_steps	train_wallclock_ms	transform_time_ms	device	status	notes
-2026-04-19T23:42:29.540	autoresearch/dft-construction	f0c9dd2	DFT	526b1e7ba3e0f84668bc4c49efc5e30404384e33433b6ed0d43d1b22ece04c06	360	3.5409064778e-24	5.6363954729e+03	500	125953.220	0.000	gpu	kept

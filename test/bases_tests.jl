@@ -41,7 +41,10 @@ using FFTW
 
         # Round-trip with top-k=26_214 on the band-limited fixture: MSE should be
         # near machine precision (~1e-20), ruling out the Walsh-Hadamard ceiling.
-        mse = AutoDFT.evaluate_basis(b)
-        @test mse < 1.0   # actually ~1e-24; setting generous bound against perturbations
+        # Evaluate specifically on fixture 1 (band-limited) where the near-zero
+        # claim holds; the multi-fixture average includes fixture 2 (edges) which
+        # is not band-limited and has non-trivial MSE even under exact DFT.
+        mse_band_limited = AutoDFT.evaluate_basis(b; image = AutoDFT.load_fixture(1))
+        @test mse_band_limited < 1.0   # actually ~1e-24; generous bound against perturbations
     end
 end

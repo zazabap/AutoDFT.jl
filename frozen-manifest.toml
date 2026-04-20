@@ -8,22 +8,24 @@ Makefile = "c357f30e9cb1c850c141b2890f29a7cab96fce82eaa6cdba96b38bb3a25d9753"
 "Manifest.toml" = "3b11b092d3342bad8ea55c08ac1b82adbe1db149a7400d0e992f80f8c24aa99c"
 "Project.toml" = "4be5e466ad3528dd4782aa6e20ad11e8ddbb803a52ff6b7ecdfddb2751a62415"
 "README.md" = "1c7af873faa6f37e3252ee353a610ce5230cadbc2790599f9fcf4e7f330ab6db"
+"data/fixture2_512.bin" = "b07f281b489021c1149ceeb56139b1fd1f6639f21e3a276f6ebb2339f8827d42"
 "data/fixture_512.bin" = "b38f4defb6acecba5131ca5b4c5caa0d1dd63df97f6192112ab953eaa700943d"
 "prepare.jl" = "4a1c4e6f16f990fd878a83f12570fcc973783a22acee1b2b9ae12e7dd0771d78"
 "program.md" = "ee05e8be505f1ee8423ada217b38537059b8476a448b85af8aed4a61e84b9204"
-"scripts/compute_manifest.jl" = "d7cebf302060f10efec651a912c935208b69bae9aedd26f874e8e83bf00eac72"
+"scripts/compute_manifest.jl" = "b3785da28ff09cde48ca04290daca8c0c3d8a0461d893839ddd08a05582cbcbf"
 "scripts/generate_fixture.jl" = "58ecf4970b0646b82a8deef5c3893464d9beda37d9d992d92da54cf4b6ef749d"
-"src/AutoDFT.jl" = "ba0faf0b10832c9b3a301e5e497cc1806f5d3c9990256cddcb1e50f9794248fe"
-"src/harness/evaluate.jl" = "6e4414f0dbba82e6260102db61a7e461d0203cf94198707f5c628af2f38d914c"
-"src/harness/fixture.jl" = "a30c244ba10a2be567d4918c05825441c9768620430adc7fafdebaebe36980f6"
+"scripts/generate_fixture2.jl" = "10bf0e8d1acb212af138eac2c5b47640d402bd3d8d8a77a9cb081ada84df4366"
+"src/AutoDFT.jl" = "24c8a980239110d2c0ecda945888a1651a97d8eb087b9d17d5cf41bec1ddbb87"
+"src/harness/evaluate.jl" = "73bfbfb64707d6398e58cdb7ce61521f1682130963e03bd6cf46370e60619b4a"
+"src/harness/fixture.jl" = "0b5ef77abf5e8266993950fcfb5dd94d08b5cdc655616907b607fca1e1a56cb4"
 "src/harness/probe.jl" = "5d2bf501439e7eeb879cc16b03b3173fc6119d377559e6c5ca26080dc12f072d"
-"src/harness/train.jl" = "a64bb73e39919dde30ef253dad5c18967f4e72cba9ae689ab7ad077af641c899"
+"src/harness/train.jl" = "639231de90f595048af4eeae1c697abd3e079405689853247865452b380ba669"
 "src/runners.jl" = "677706dd927a1aea845887f611d2a05ca6ca2b7b04cb65aba9f9d4e95ba220d9"
-"test/harness_tests.jl" = "3a0d83f61212e3b4dfee22eaa2305e2686747f327cc93d47132882cc84c5f499"
+"test/harness_tests.jl" = "1cd792926f6373adf43db4ad4fa1bdc9d004b543804ef356079fee52771a815d"
 "test/runtests.jl" = "144eb149abb579ffee5634bd5bb931a013761291e7f77b734e1ad32eca6b67f2"
 
 [probe]
-qft_identity_mse = 5636.395472862066
+qft_identity_mse = 3891.8147542961997
 
 [secret]
-manifest_sha = "57b51cc434d50153eae48bbb533f93cd8924073ac4872d76d927fb3575ab2c6d"
+manifest_sha = "9fa183ba74c3a2d066c357000ce1454ab868f21197441ebac2a545dfb4020c15"

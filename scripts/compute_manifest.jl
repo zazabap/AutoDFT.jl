@@ -33,8 +33,10 @@ const FROZEN_FILES = [
     "src/harness/probe.jl",
     "src/harness/train.jl",
     "scripts/generate_fixture.jl",
+    "scripts/generate_fixture2.jl",
     "scripts/compute_manifest.jl",
     "data/fixture_512.bin",
+    "data/fixture2_512.bin",
     "test/runtests.jl",
     "test/harness_tests.jl",
 ]

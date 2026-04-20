@@ -8,12 +8,26 @@ using ParametricDFT
 @testset "harness" begin
 
 @testset "load_fixture" begin
-    img = AutoDFT.load_fixture()
-    @test size(img) == (512, 512)
-    @test eltype(img) == Float64
-    # Determinism: content must match the seed-42 generator.
-    @test abs(sum(img) / length(img)) < 1e-9       # zero mean
-    @test abs(sqrt(sum(abs2, img) / length(img)) - 1.0) < 1e-9  # unit std
+    # Fixture 1: band-limited Gaussian, seed 42
+    img1 = AutoDFT.load_fixture()           # default idx=1
+    @test size(img1) == (512, 512)
+    @test eltype(img1) == Float64
+    @test abs(sum(img1) / length(img1)) < 1e-9
+    @test abs(sqrt(sum(abs2, img1) / length(img1)) - 1.0) < 1e-9
+
+    # Fixture 2: piecewise-smooth + edges, seed 43 (same zero-mean / unit-std)
+    img2 = AutoDFT.load_fixture(2)
+    @test size(img2) == (512, 512)
+    @test eltype(img2) == Float64
+    @test abs(sum(img2) / length(img2)) < 1e-9
+    @test abs(sqrt(sum(abs2, img2) / length(img2)) - 1.0) < 1e-9
+    @test img1 != img2   # they're genuinely different images
+
+    # load_fixtures returns all fixtures in order
+    imgs = AutoDFT.load_fixtures()
+    @test length(imgs) == 2
+    @test imgs[1] == img1
+    @test imgs[2] == img2
 end
 
 @testset "evaluate_basis returns finite MSE for QFTBasis" begin
